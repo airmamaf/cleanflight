@@ -42,7 +42,7 @@ typedef struct profile_s {
 
     uint8_t acc_unarmedcal;                 // turn automatic acc compensation on/off
 
-    uint32_t activate[CHECKBOX_ITEM_COUNT]; // activate switches, bitmask, 3 bits per channel, lower 16 bits aux1-4, upper 16 bits aux 5-8
+    uint64_t activate[CHECKBOX_ITEM_COUNT]; // activate switches, bitmask, 5 bits per channel, see rc_controls_unittest
 
     // Radio/ESC-related configuration
     uint8_t deadband;                       // introduce a deadband around the stick center for pitch and roll axis. Must be greater than zero.

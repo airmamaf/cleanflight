@@ -33,7 +33,7 @@
 TEST(RcControlsTest, updateRcOptionsWithAllInputsAtMidde)
 {
     // given
-    uint32_t activate[CHECKBOX_ITEM_COUNT];
+    uint64_t activate[CHECKBOX_ITEM_COUNT];
     memset(&activate, 0, sizeof(activate));
 
     uint8_t index;
@@ -65,21 +65,33 @@ TEST(RcControlsTest, updateRcOptionsWithAllInputsAtMidde)
         EXPECT_EQ(expectedRcOptions[index], rcOptions[index]);
     }
 }
+
+#define BITS_PER_CHANNEL 5
+
+#define AUX_MASK(channelStateMask, channel)
 
 TEST(RcControlsTest, updateRcOptionsUsingValidAuxConfigurationAndRXValues)
 {
     // given
-    uint32_t activate[CHECKBOX_ITEM_COUNT];
+    uint64_t activate[CHECKBOX_ITEM_COUNT];
     memset(&activate, 0, sizeof(activate));
-    activate[0] = 0b000000000100UL;
-    activate[1] = 0b000000010000UL;
-    activate[2] = 0b000001000000UL;
-    activate[3] = 0b111000000000UL;
 
-    activate[4] = 0b000000000001UL << 16;
-    activate[5] = 0b000000010000UL << 16;
-    activate[6] = 0b000100000000UL << 16;
-    activate[7] = 0b111000000000UL << 16;
+    uint8_t auxIndex = 0;
+    uint8_t activateIndex = 0;
+    activate[activateIndex++] = (uint64_t)(0b00001) << (auxIndex++ * BITS_PER_CHANNEL);
+    activate[activateIndex++] = (uint64_t)(0b00100) << (auxIndex++ * BITS_PER_CHANNEL);
+    activate[activateIndex++] = (uint64_t)(0b10000) << (auxIndex++ * BITS_PER_CHANNEL);
+    activate[activateIndex++] = (uint64_t)(0b11111) << (auxIndex++ * BITS_PER_CHANNEL);
+
+    activate[activateIndex++] = (uint64_t)(0b00001) << (auxIndex++ * BITS_PER_CHANNEL);
+    activate[activateIndex++] = (uint64_t)(0b00100) << (auxIndex++ * BITS_PER_CHANNEL);
+    activate[activateIndex++] = (uint64_t)(0b10000) << (auxIndex++ * BITS_PER_CHANNEL);
+    activate[activateIndex++] = (uint64_t)(0b11111) << (auxIndex++ * BITS_PER_CHANNEL);
+
+    activate[activateIndex++] = (uint64_t)(0b11101) << (auxIndex++ * BITS_PER_CHANNEL);
+    activate[activateIndex++] = (uint64_t)(0b10101) << (auxIndex++ * BITS_PER_CHANNEL);
+    activate[activateIndex++] = (uint64_t)(0b10111) << (auxIndex++ * BITS_PER_CHANNEL);
+    activate[activateIndex++] = (uint64_t)(0b11111) << (auxIndex++ * BITS_PER_CHANNEL);
 
     uint8_t index;
 
@@ -96,27 +108,37 @@ TEST(RcControlsTest, updateRcOptionsUsingValidAuxConfigurationAndRXValues)
         rcData[index] = PWM_RANGE_MIDDLE;
     }
 
-    rcData[AUX1] = PWM_RANGE_MAX;
-    rcData[AUX2] = PWM_RANGE_MIDDLE;
-    rcData[AUX3] = PWM_RANGE_MIN;
-    rcData[AUX4] = PWM_RANGE_MAX;
-    rcData[AUX5] = PWM_RANGE_MIN;
-    rcData[AUX6] = PWM_RANGE_MIDDLE;
-    rcData[AUX7] = PWM_RANGE_MAX;
-    rcData[AUX8] = PWM_RANGE_MIN;
+    rcData[ AUX1] = PWM_RANGE_MIN;
+    rcData[ AUX2] = PWM_RANGE_MIDDLE;
+    rcData[ AUX3] = PWM_RANGE_MAX;
+    rcData[ AUX4] = PWM_RANGE_MAX;
+
+    rcData[ AUX5] = PWM_RANGE_MIN;
+    rcData[ AUX6] = PWM_RANGE_MIDDLE;
+    rcData[ AUX7] = PWM_RANGE_MAX;
+    rcData[ AUX8] = PWM_RANGE_MIN;
+
+    rcData[ AUX9] = PWM_RANGE_MIN;
+    rcData[AUX10] = PWM_RANGE_MIDDLE;
+    rcData[AUX11] = PWM_RANGE_MAX;
+    rcData[AUX12] = PWM_RANGE_MIDDLE;
 
 
     // and
     uint32_t expectedRcOptions[CHECKBOX_ITEM_COUNT];
     memset(&expectedRcOptions, 0, sizeof(expectedRcOptions));
-    expectedRcOptions[0] = 1;
-    expectedRcOptions[1] = 1;
-    expectedRcOptions[2] = 1;
-    expectedRcOptions[3] = 1;
-    expectedRcOptions[4] = 1;
-    expectedRcOptions[5] = 1;
-    expectedRcOptions[6] = 1;
-    expectedRcOptions[7] = 1;
+    expectedRcOptions[ 0] = 1;
+    expectedRcOptions[ 1] = 1;
+    expectedRcOptions[ 2] = 1;
+    expectedRcOptions[ 3] = 1;
+    expectedRcOptions[ 4] = 1;
+    expectedRcOptions[ 5] = 1;
+    expectedRcOptions[ 6] = 1;
+    expectedRcOptions[ 7] = 1;
+    expectedRcOptions[ 8] = 1;
+    expectedRcOptions[ 9] = 1;
+    expectedRcOptions[10] = 1;
+    expectedRcOptions[11] = 1;
 
     // when
     updateRcOptions(activate);
@@ -128,7 +150,9 @@ TEST(RcControlsTest, updateRcOptionsUsingValidAuxConfigurationAndRXValues)
     }
 }
 
-void changeProfile(uint8_t profileIndex) {}
+void changeProfile(uint8_t profileIndex) {
+    UNUSED(profileIndex);
+}
 void accSetCalibrationCycles(uint16_t) {}
 void gyroSetCalibrationCycles(uint16_t) {}
 void applyAndSaveAccelerometerTrimsDelta(rollAndPitchTrims_t*) {}

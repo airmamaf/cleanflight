@@ -79,7 +79,8 @@ extern int16_t debug[4]; // FIXME dependency on mw.c
 #define CAP_DYNBALANCE              ((uint32_t)1 << 2)
 #define CAP_FLAPS                   ((uint32_t)1 << 3)
 #define CAP_CHANNEL_FORWARDING      ((uint32_t)1 << 4)
-#define CAP_ACTIVATE_AUX1_TO_AUX8   ((uint32_t)1 << 5)
+#define CAP_ACTIVATE_AUX1_TO_AUX8   ((uint32_t)1 << 5) // No longer used
+#define CAP_12AUX_WITH_5POSITIONS   ((uint32_t)1 << 6) // replaces CAP_ACTIVATE_AUX1_TO_AUX8
 
 #define MSP_IDENT                100    //out message         multitype + multiwii version + protocol version + capability variable
 #define MSP_STATUS               101    //out message         cycletime & errors_count & sensor present & box activation & current setting number
@@ -136,9 +137,9 @@ extern int16_t debug[4]; // FIXME dependency on mw.c
 #define MSP_SET_ACC_TRIM         239    //in message          set acc angle trim values
 #define MSP_GPSSVINFO            164    //out message         get Signal Strength (only U-Blox)
 
-#define INBUF_SIZE 64
+#define INBUF_SIZE 88 // MSP_SET_BOX is currently the biggest.
 
-#define ACTIVATE_MASK 0xFFF // see
+#define ACTIVATE_MASK 0xFFFFFFFFFFFFFFFUL // 5 bits per channel, 12 channels.
 
 typedef struct box_e {
     const uint8_t boxId;         // see boxId_e
@@ -256,6 +257,12 @@ void serialize8(uint8_t a)
     currentPort->checksum ^= a;
 }
 
+void serialize64(uint64_t a)
+{
+    serialize32(a & 0xFFFFFFFF);
+    serialize32(a >> 32);
+}
+
 uint8_t read8(void)
 {
     return currentPort->inBuf[currentPort->indRX++] & 0xff;
@@ -272,6 +279,13 @@ uint32_t read32(void)
 {
     uint32_t t = read16();
     t += (uint32_t)read16() << 16;
+    return t;
+}
+
+uint64_t read64(void)
+{
+    uint64_t t = read32();
+    t += (uint64_t)read32() << 32;
     return t;
 }
 
@@ -479,7 +493,7 @@ static bool processOutCommand(uint8_t cmdMSP)
         serialize8(MW_VERSION);
         serialize8(masterConfig.mixerConfiguration); // type of multicopter
         serialize8(MSP_VERSION);            // MultiWii Serial Protocol Version
-        serialize32(CAP_PLATFORM_32BIT | CAP_DYNBALANCE | (masterConfig.airplaneConfig.flaps_speed ? CAP_FLAPS : 0) | CAP_CHANNEL_FORWARDING | CAP_ACTIVATE_AUX1_TO_AUX8); // "capability"
+        serialize32(CAP_PLATFORM_32BIT | CAP_DYNBALANCE | (masterConfig.airplaneConfig.flaps_speed ? CAP_FLAPS : 0) | CAP_CHANNEL_FORWARDING | CAP_12AUX_WITH_5POSITIONS); // "capability"
         break;
     case MSP_STATUS:
         headSerialReply(11);
@@ -622,11 +636,10 @@ static bool processOutCommand(uint8_t cmdMSP)
         serializeNames(pidnames);
         break;
     case MSP_BOX:
-        headSerialReply(4 * activeBoxIdCount);
-        for (i = 0; i < activeBoxIdCount; i++)
-            serialize16(currentProfile->activate[activeBoxIds[i]] & ACTIVATE_MASK);
-        for (i = 0; i < activeBoxIdCount; i++)
-            serialize16((currentProfile->activate[activeBoxIds[i]] >> 16) & ACTIVATE_MASK);
+        headSerialReply(8 * activeBoxIdCount);
+        for (i = 0; i < activeBoxIdCount; i++) {
+            serialize64(currentProfile->activate[activeBoxIds[i]] & ACTIVATE_MASK);
+        }
         break;
     case MSP_BOXNAMES:
         // headSerialReply(sizeof(boxnames) - 1);
@@ -794,9 +807,7 @@ static bool processInCommand(void)
         break;
     case MSP_SET_BOX:
         for (i = 0; i < activeBoxIdCount; i++)
-            currentProfile->activate[activeBoxIds[i]] = read16() & ACTIVATE_MASK;
-        for (i = 0; i < activeBoxIdCount; i++)
-            currentProfile->activate[activeBoxIds[i]] |= (read16() & ACTIVATE_MASK) << 16;
+            currentProfile->activate[activeBoxIds[i]] = read64() & ACTIVATE_MASK;
         break;
     case MSP_SET_RC_TUNING:
         currentProfile->controlRateConfig.rcRate8 = read8();
